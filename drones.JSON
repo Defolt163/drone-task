@@ -1,0 +1,20 @@
+{
+  "drone1": [
+    {"time": 0, "position": [53.197483, 50.106395], "altitude": 300},
+    {"time": 5, "position": [53.202534, 50.114549], "altitude": 310},
+    {"time": 10, "position": [53.205523, 50.120643], "altitude": 300},
+    {"time": 15, "position": [53.204132, 50.123046], "altitude": 310},
+    {"time": 20, "position": [53.202637, 50.122016], "altitude": 300},
+    {"time": 25, "position": [53.201143, 50.117467], "altitude": 310},
+    {"time": 30, "position": [53.198411, 50.111545], "altitude": 300}
+  ],
+  "drone2": [
+    {"time": 0, "position": [53.197483, 50.106395], "altitude": 300},
+    {"time": 1, "position": [53.202534, 50.114549], "altitude": 310},
+    {"time": 3, "position": [53.205523, 50.120643], "altitude": 300},
+    {"time": 6, "position": [53.204132, 50.123046], "altitude": 310},
+    {"time": 9, "position": [53.202637, 50.122016], "altitude": 300},
+    {"time": 12, "position": [53.201143, 50.117467], "altitude": 310},
+    {"time": 16, "position": [53.198411, 50.111545], "altitude": 300}
+  ]
+}
