@@ -6,3 +6,9 @@
     color: aliceblue;
     padding: 10px 10px;
 }
+
+.zones_toolbar{
+    top: 20px;
+    left: 20px;
+    width: max-content;
+}

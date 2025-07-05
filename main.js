@@ -18,6 +18,9 @@
     });
 
   function drawDroneRoute(droneData, selectedDrone){
+    const routePositions = droneData.map(p =>
+        Cesium.Cartesian3.fromDegrees(p.position[1], p.position[0], p.altitude)
+      );
       // Анимация дрона
       const start = Cesium.JulianDate.now();
       const property = new Cesium.SampledPositionProperty();
@@ -28,16 +31,23 @@
         property.addSample(time, pos);
       });
 
-      const drone = viewer.entities.add({
-        id: selectedDrone,
-        availability: new Cesium.TimeIntervalCollection([{
-          start: start,
-          stop: Cesium.JulianDate.addSeconds(start, droneData.at(-1).time, new Cesium.JulianDate())
-        }]),
-        position: property,
+      // Добавляем путь
+      viewer.entities.add({
+        id: selectedDrone + '-path',
+        polyline: {
+          positions: routePositions,
+          width: 3,
+          material: Cesium.Color.YELLOW
+        }
+      });
+
+      // Добавляем точку с лейблом в начале пути (можно сделать движущейся, если есть данные по времени)
+      viewer.entities.add({
+        id: selectedDrone + '-point',
+        position: property, // позиция по времени
         point: { pixelSize: 10, color: Cesium.Color.RED },
         label: {
-          text: `${selectedDrone}`,
+          text: selectedDrone,
           font: "14px sans-serif",
           fillColor: Cesium.Color.WHITE,
           verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
@@ -58,12 +68,12 @@
       viewer.clock.multiplier = 1;
       viewer.clock.shouldAnimate = true;
 
-      viewer.trackedEntity = drone;
+      //viewer.trackedEntity = drone;
   }
 
   // Получение массива с дронами
   let dronesData = []
-  const selectDroneOption = document.querySelector('.toolbar'); // тулбар выбора дрона
+  const selectDroneOption = document.querySelector('.drone_toolbar'); // тулбар выбора дрона
 fetch('drones.json')
     .then(response => response.json())
     .then(data => {
@@ -77,22 +87,27 @@ fetch('drones.json')
         selectDroneOption.appendChild(opt);
       });
 
-      let droneData = data.drone1; // Установка камеры на первый дрон по умолчанию
+      let droneData = []; // Установка камеры на первый дрон по умолчанию
       selectDroneOption.addEventListener('change', () => {
         const selectedDrone = selectDroneOption.value;
-        //droneData = data[selectedDrone]
+        droneData = data[selectedDrone]
         //drawDroneRoute(droneData, selectedDrone)
         console.log(selectedDrone)
         if (selectedDrone === "allDrones") {
           Object.keys(dronesData).forEach(key => {
-            viewer.entities.removeById(key)
+            console.log("DEL", key)
+            viewer.entities.removeById(key + '-path');
+            viewer.entities.removeById(key + '-point');
           });
-          //viewer.entities.remove('drones')
           for (const key in data) {
             drawDroneRoute(data[key], key); // Отрисовка всех
           }
         }else{
-          //viewer.entities.removeAll()
+          Object.keys(dronesData).forEach(key => {
+            console.log("DEL", key)
+            viewer.entities.removeById(key + '-path');
+            viewer.entities.removeById(key + '-point');
+          });
           droneData = data[selectedDrone]
           drawDroneRoute(droneData, selectedDrone)
         }
@@ -103,17 +118,83 @@ fetch('drones.json')
     });
 
   // Poligons
-  const orangePolygon = viewer.entities.add({
-  name: "Orange polygon with per-position heights and outline",
-  id: 'test12',
-  polygon: {
-    hierarchy: Cesium.Cartesian3.fromDegreesArrayHeights([
-      50.143131, 53.198720, 300, 50.119270, 53.199906, 300, 50.122617, 53.191246, 300
-    ]),
-    extrudedHeight: 0,
-    perPositionHeight: true,
-    material: Cesium.Color.ORANGE.withAlpha(0.5),
-    outline: false,
-    outlineColor: Cesium.Color.BLACK,
-  },
-});
+/*   const orangePolygon = viewer.entities.add({
+    name: "Зона 1",
+    id: 'Zone 1',
+    polygon: {
+      hierarchy: Cesium.Cartesian3.fromDegreesArrayHeights([
+        50.069118, 53.176585, 100, 
+        50.091385, 53.198935, 100, 
+        50.109617, 53.207369, 100, 
+        50.144884, 53.187896, 100, 
+        50.074349, 53.174250, 100
+      ]),
+      extrudedHeight: 0,
+      perPositionHeight: true,
+      material: Cesium.Color.ORANGE.withAlpha(0.5),
+      outline: false,
+      outlineColor: Cesium.Color.BLACK,
+    },
+  }); */
+
+  const selectZoneOption = document.querySelector('.zones_toolbar'); // тулбар выбора зоны
+  let zonesData = []
+  fetch('zones.json')
+    .then(response => response.json())
+    .then(data => {
+      zonesData = data
+      console.log("DATA Zones", zonesData)
+      
+
+      Object.keys(zonesData).forEach(key => {
+        const opt = document.createElement('option');
+        opt.value = key;
+        opt.textContent = key;
+        selectZoneOption.appendChild(opt);
+      });
+      for (const key in data) {
+        drawZones(data[key], key)
+      }
+      
+
+  })
+
+  function drawZones(zoneData, key){
+      //const property = new Cesium.SampledPositionProperty();
+      let coordinates = []
+
+      //console.log("KEK2", key, zoneData)
+      zoneData.area.forEach(p => {
+        console.log("KEK", key, zoneData)
+        //console.log([p[0], p[1], zoneData.altitude].join(', '))
+        coordinates.push(p[1], p[0], zoneData.altitude)
+        //const pos = Cesium.Cartesian3.fromDegrees(p[0], p[1], zoneData.altitude);
+        
+        //const pos = Cesium.Cartesian3.fromDegrees(p.position[1], p.position[0], p.altitude);
+        //property.addSample(pos);
+      });
+      
+      //console.log(zoneData)
+      //console.log(property)
+
+      viewer.entities.add({
+        name: key,
+        id: key,
+        polygon: {
+          hierarchy: Cesium.Cartesian3.fromDegreesArrayHeights(
+            coordinates
+          ),
+          extrudedHeight: 0,
+          perPositionHeight: true,
+          material: Cesium.Color.ORANGE.withAlpha(0.5),
+          outline: false,
+          outlineColor: Cesium.Color.BLACK,
+        },
+      });
+      
+
+      
+      //viewer.trackedEntity = drone;
+  }
+
+// Отслеживание пролетов в зоне
