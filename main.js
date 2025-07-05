@@ -17,34 +17,7 @@
       }
     });
 
-  let dronesData = []
-    // 🟨 Загружаем JSON
-  fetch('drones.json')
-    .then(response => response.json())
-    .then(data => {
-      dronesData = data
-      console.log(dronesData)
-      const droneData = data.drone1;
-
-      const routePositions = droneData.map(p =>
-        Cesium.Cartesian3.fromDegrees(p.position[1], p.position[0], p.altitude)
-      );
-
-      // Добавляем линию маршрута
-      viewer.entities.add({
-        name: "Drone Path",
-        polyline: {
-          positions: routePositions,
-          width: 5,
-          material: Cesium.Color.fromRandom({
-              minimumRed : 0.75,
-              minimumGreen : 0.75,
-              minimumBlue : 0.75,
-              alpha : 1.0
-          })
-        }
-      });
-
+  function drawDroneRoute(droneData, selectedDrone){
       // Анимация дрона
       const start = Cesium.JulianDate.now();
       const property = new Cesium.SampledPositionProperty();
@@ -56,6 +29,7 @@
       });
 
       const drone = viewer.entities.add({
+        id: selectedDrone,
         availability: new Cesium.TimeIntervalCollection([{
           start: start,
           stop: Cesium.JulianDate.addSeconds(start, droneData.at(-1).time, new Cesium.JulianDate())
@@ -63,7 +37,7 @@
         position: property,
         point: { pixelSize: 10, color: Cesium.Color.RED },
         label: {
-          text: "Drone",
+          text: `${selectedDrone}`,
           font: "14px sans-serif",
           fillColor: Cesium.Color.WHITE,
           verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
@@ -85,6 +59,45 @@
       viewer.clock.shouldAnimate = true;
 
       viewer.trackedEntity = drone;
+  }
+
+  // Получение массива с дронами
+  let dronesData = []
+  const selectDroneOption = document.querySelector('.toolbar'); // тулбар выбора дрона
+fetch('drones.json')
+    .then(response => response.json())
+    .then(data => {
+      dronesData = data
+      console.log("DATA DRONES", dronesData)
+
+      Object.keys(dronesData).forEach(key => {
+        const opt = document.createElement('option');
+        opt.value = key;
+        opt.textContent = key;
+        selectDroneOption.appendChild(opt);
+      });
+
+      let droneData = data.drone1; // Установка камеры на первый дрон по умолчанию
+      selectDroneOption.addEventListener('change', () => {
+        const selectedDrone = selectDroneOption.value;
+        //droneData = data[selectedDrone]
+        //drawDroneRoute(droneData, selectedDrone)
+        console.log(selectedDrone)
+        if (selectedDrone === "allDrones") {
+          Object.keys(dronesData).forEach(key => {
+            viewer.entities.removeById(key)
+          });
+          //viewer.entities.remove('drones')
+          for (const key in data) {
+            drawDroneRoute(data[key], key); // Отрисовка всех
+          }
+        }else{
+          //viewer.entities.removeAll()
+          droneData = data[selectedDrone]
+          drawDroneRoute(droneData, selectedDrone)
+        }
+      });
+
     }).catch(error => {
       console.error("Ошибка загрузки JSON:", error);
     });
@@ -92,6 +105,7 @@
   // Poligons
   const orangePolygon = viewer.entities.add({
   name: "Orange polygon with per-position heights and outline",
+  id: 'test12',
   polygon: {
     hierarchy: Cesium.Cartesian3.fromDegreesArrayHeights([
       50.143131, 53.198720, 300, 50.119270, 53.199906, 300, 50.122617, 53.191246, 300
@@ -103,19 +117,3 @@
     outlineColor: Cesium.Color.BLACK,
   },
 });
-
-// Тулбар
-Sandcastle.addToolbarMenu([
-  {
-    text: "Tracking reference frame: Auto-detect",
-  },
-  {
-    text: "Tracking reference frame: Inertial",
-  },
-  {
-    text: "Tracking reference frame: Velocity",
-  },
-  {
-    text: "Tracking reference frame: East-North-Up",
-  }
-]);
