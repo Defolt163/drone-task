@@ -17,9 +17,9 @@ viewer.camera.flyTo({
   }
 });
 
-function drawDroneRoute(droneData, selectedDrone){
-  const routePositions = droneData.map(p =>
-      Cesium.Cartesian3.fromDegrees(p.position[1], p.position[0], p.altitude)
+function drawDroneRoute(droneData, selectedDrone, zoneAltitude){
+    const routePositions = droneData.map(p =>
+      Cesium.Cartesian3.fromDegrees(p.position[1], p.position[0], (zoneAltitude - p.altitude))
     );
     // Анимация дрона
     const start = Cesium.JulianDate.now();
@@ -27,7 +27,7 @@ function drawDroneRoute(droneData, selectedDrone){
 
     droneData.forEach(p => {
       const time = Cesium.JulianDate.addSeconds(start, p.time, new Cesium.JulianDate());
-      const pos = Cesium.Cartesian3.fromDegrees(p.position[1], p.position[0], p.altitude);
+      const pos = Cesium.Cartesian3.fromDegrees(p.position[1], p.position[0], (zoneAltitude - p.altitude));
       property.addSample(time, pos);
     });
 
@@ -71,8 +71,30 @@ function drawDroneRoute(droneData, selectedDrone){
     //viewer.trackedEntity = drone;
 }
 
+const selectZoneOption = document.querySelector('.zones_toolbar'); // тулбар выбора зоны
+let zonesData = []
+let countDronesInsideZone = {}
+fetch('zones.json')
+  .then(response => response.json())
+  .then(data => {
+    zonesData = data
+    console.log("DATA Zones", zonesData)
+    
+
+    Object.keys(zonesData).forEach(key => {
+      const opt = document.createElement('option');
+      opt.value = key;
+      opt.textContent = key;
+      selectZoneOption.appendChild(opt);
+    });
+    /* for (const key in data) {
+      //drawZones(data[key], key)
+      console.log("drawZone", data[key], key)
+    } */
+})
   // Получение массива с дронами
 let dronesData = []
+const droneZonePasses = {};
 const selectDroneOption = document.querySelector('.drone_toolbar'); // тулбар выбора дрона
 fetch('drones.json')
   .then(response => response.json())
@@ -86,6 +108,35 @@ fetch('drones.json')
       opt.textContent = key;
       selectDroneOption.appendChild(opt);
     });
+
+    Object.keys(zonesData).forEach(zone =>{
+      Object.keys(dronesData).forEach(key => {
+        let droneInsideZone = false;
+        for (let i of dronesData[key]) {
+          if (isPointInPolygon([i.position[1], i.position[0], (i.altitude-zonesData[zone].altitude)], zonesData[zone])) {
+            
+            if (!countDronesInsideZone[zone]) {
+              countDronesInsideZone[zone] = 1
+            } else {
+              countDronesInsideZone[zone]++;
+            }
+            // Подсчёт, сколько раз этот конкретный дрон вошёл в зону
+            if (!droneZonePasses[key]) {
+              droneZonePasses[key] = {};
+            }
+
+            if (!droneZonePasses[key][zone]) {
+              droneZonePasses[key]['zoneAltitude'] = zonesData[zone].altitude;
+            } 
+            droneInsideZone = true;
+            break;
+          }
+        }
+        console.log("Подробности по каждому дрону:", droneZonePasses);
+        console.log(`Drone ${key} is ${droneInsideZone ? 'inside' : 'outside'} the zone.`);
+      })
+      drawZones(zonesData[zone], zone)
+    })
 
     let droneData = []; // Установка камеры на первый дрон по умолчанию
     selectDroneOption.addEventListener('change', () => {
@@ -108,7 +159,8 @@ fetch('drones.json')
           viewer.entities.removeById(key + '-point');
         });
         droneData = data[selectedDrone]
-        drawDroneRoute(droneData, selectedDrone)
+        console.log("222", droneZonePasses[selectedDrone].zoneAltitude)
+        drawDroneRoute(droneData, selectedDrone, droneZonePasses[selectedDrone].zoneAltitude)
       }
     });
 
@@ -116,7 +168,7 @@ fetch('drones.json')
     console.error("Ошибка загрузки JSON:", error);
   });
 
-  // Poligons
+  // Polygons
 /*   const orangePolygon = viewer.entities.add({
     name: "Зона 1",
     id: 'Zone 1',
@@ -136,34 +188,14 @@ fetch('drones.json')
     },
   }); */
 
-const selectZoneOption = document.querySelector('.zones_toolbar'); // тулбар выбора зоны
-let zonesData = []
-fetch('zones.json')
-  .then(response => response.json())
-  .then(data => {
-    zonesData = data
-    console.log("DATA Zones", zonesData)
-    
+//отображение зоны
 
-    Object.keys(zonesData).forEach(key => {
-      const opt = document.createElement('option');
-      opt.value = key;
-      opt.textContent = key;
-      selectZoneOption.appendChild(opt);
-    });
-    for (const key in data) {
-      drawZones(data[key], key)
-    }
-    
-
-})
-
-function drawZones(zoneData, key){
+async function drawZones(zoneData, key){
     let coordinates = []
 
     zoneData.area.forEach(p => {
-      console.log("KEK", key, zoneData)
-      coordinates.push(p[1], p[0], zoneData.altitude)
+      console.log("KEK", countDronesInsideZone[key])
+      coordinates.push(p[1], p[0], zoneData.height)
     });
 
     viewer.entities.add({
@@ -175,11 +207,34 @@ function drawZones(zoneData, key){
         ),
         extrudedHeight: 0,
         perPositionHeight: true,
-        material: Cesium.Color.ORANGE.withAlpha(0.5),
+        material: countDronesInsideZone[key] <= 3 ? Cesium.Color.BLUE.withAlpha(0.5) : 
+        countDronesInsideZone[key] > 3 && countDronesInsideZone[key] <= 5 ? Cesium.Color.ORANGE.withAlpha(0.5) : 
+        Cesium.Color.RED.withAlpha(0.5),
         outline: false,
         outlineColor: Cesium.Color.BLACK,
       },
     });
 }
-
 // Отслеживание пролетов в зоне
+function isPointInPolygon(point, polygon) {
+  console.log(polygon)
+  const [x, y, z] = point;
+  const area = polygon.area
+  let inside = false;
+  
+  if (z > polygon.altitude) {
+    return false; 
+  }
+
+  for (let i = 0, j = area.length - 1; i < area.length; j = i++) {
+    const xi = area[i][1], yi = area[i][0];
+    const xj = area[j][1], yj = area[j][0];
+
+    const intersect = ((yi > y) !== (yj > y)) &&
+      (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+    if (intersect) inside = !inside;
+  }
+  //const insideAltitude = z >= polygon.altitude
+  console.log(inside)
+  return inside;
+}
