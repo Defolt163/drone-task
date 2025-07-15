@@ -11,20 +11,20 @@
   "drone2": [
     {"time": 0, "position": [53.197483, 50.106395], "altitude": 200},
     {"time": 1, "position": [53.202534, 50.114549], "altitude": 210},
-    {"time": 3, "position": [53.205523, 50.120643], "altitude": 100},
+    {"time": 3, "position": [53.205523, 50.120643], "altitude": 130},
     {"time": 6, "position": [53.204132, 50.123046], "altitude": 210},
     {"time": 9, "position": [53.202637, 50.122016], "altitude": 200},
     {"time": 12, "position": [53.201143, 50.117467], "altitude": 210},
-    {"time": 16, "position": [53.198411, 50.111545], "altitude": 100}
+    {"time": 16, "position": [53.198411, 50.111545], "altitude": 130}
   ],
   "drone3": [
-    {"time": 0, "position": [53.197483, 50.106395], "altitude": 30},
-    {"time": 1, "position": [53.202534, 50.114549], "altitude": 30},
-    {"time": 3, "position": [53.205523, 50.120643], "altitude": 30},
-    {"time": 6, "position": [53.204132, 50.123046], "altitude": 30},
-    {"time": 9, "position": [53.202637, 50.122016], "altitude": 30},
-    {"time": 12, "position": [53.201143, 50.117467], "altitude": 30},
-    {"time": 16, "position": [53.198411, 50.111545], "altitude": 30}
+    {"time": 0, "position": [53.197483, 50.106395], "altitude": 100},
+    {"time": 1, "position": [53.202534, 50.114549], "altitude": 100},
+    {"time": 3, "position": [53.205523, 50.120643], "altitude": 100},
+    {"time": 6, "position": [53.204132, 50.123046], "altitude": 100},
+    {"time": 9, "position": [53.202637, 50.122016], "altitude": 100},
+    {"time": 12, "position": [53.201143, 50.117467], "altitude": 100},
+    {"time": 16, "position": [53.198411, 50.111545], "altitude": 100}
   ],
   "drone4": [
     {"time": 0, "position": [53.197483, 50.106395], "altitude": 100},
@@ -36,21 +36,40 @@
     {"time": 16, "position": [53.198411, 50.111545], "altitude": 100}
   ],
   "drone5": [
-    {"time": 0, "position": [53.197483, 50.106395], "altitude": 10},
-    {"time": 1, "position": [53.202534, 50.114549], "altitude": 10},
-    {"time": 3, "position": [53.205523, 50.120643], "altitude": 10},
-    {"time": 6, "position": [53.204132, 50.123046], "altitude": 10},
-    {"time": 9, "position": [53.202637, 50.122016], "altitude": 10},
-    {"time": 12, "position": [53.201143, 50.117467], "altitude": 10},
-    {"time": 16, "position": [53.198411, 50.111545], "altitude": 10}
+    {"time": 0, "position": [53.197483, 50.106395], "altitude": 80},
+    {"time": 1, "position": [53.202534, 50.114549], "altitude": 80},
+    {"time": 3, "position": [53.205523, 50.120643], "altitude": 80},
+    {"time": 6, "position": [53.204132, 50.123046], "altitude": 80},
+    {"time": 9, "position": [53.202637, 50.122016], "altitude": 80},
+    {"time": 12, "position": [53.201143, 50.117467], "altitude": 80},
+    {"time": 16, "position": [53.198411, 50.111545], "altitude": 80}
   ],
   "drone6": [
     {"time": 0, "position": [53.181321, 50.078127], "altitude": 100},
     {"time": 1, "position": [53.178076, 50.082200], "altitude": 100},
-    {"time": 3, "position": [53.182331, 50.098759], "altitude": 100},
+    {"time": 3, "position": [53.182331, 50.098759], "altitude": 150},
     {"time": 6, "position": [53.190044, 50.099202], "altitude": 100},
-    {"time": 9, "position": [53.189884, 50.095660], "altitude": 5},
-    {"time": 12, "position": [53.189299, 50.095394], "altitude": 3},
-    {"time": 16, "position": [53.189299, 50.095394], "altitude": 0.2}
+    {"time": 9, "position": [53.189884, 50.095660], "altitude": 100},
+    {"time": 12, "position": [53.189299, 50.095394], "altitude": 100},
+    {"time": 16, "position": [53.189299, 50.095394], "altitude": 100}
+  ],
+  "drone7": [
+    {"time": 0, "position": [53.191006, 50.156139], "altitude": 113},
+    {"time": 1, "position": [53.189965, 50.158739], "altitude": 113},
+    {"time": 3, "position": [53.186627, 50.162461], "altitude": 60},
+    {"time": 6, "position": [53.190302, 50.155731], "altitude": 113},
+    {"time": 9, "position": [53.193088, 50.173881], "altitude": 200},
+    {"time": 12, "position": [53.189015, 50.160421], "altitude": 200}
+  ],
+  "drone8": [
+    {"time": 0, "position": [53.184921, 50.082647], "altitude": 113},
+    {"time": 1, "position": [53.183426, 50.088054], "altitude": 113},
+    {"time": 3, "position": [53.182601, 50.079986], "altitude": 113},
+    {"time": 6, "position": [53.181776, 50.092002], "altitude": 113}
+  ],
+  "drone9": [
+    {"time": 0, "position": [53.186803, 50.094706], "altitude": 113},
+    {"time": 1, "position": [53.183401, 50.080458], "altitude": 113},
+    {"time": 3, "position": [53.167105, 50.082089], "altitude": 113}
   ]
 }

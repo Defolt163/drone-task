@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
   <meta charset="utf-8">
-  <!-- Include the CesiumJS JavaScript and CSS files -->
+  <title>Карта пролетов</title>
   <script src="https://cesium.com/downloads/cesiumjs/releases/1.131/Build/Cesium/Cesium.js"></script>
   <link href="https://cesium.com/downloads/cesiumjs/releases/1.131/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
   <link rel="stylesheet" href="./styles/style.css">
@@ -10,11 +10,37 @@
 <body>
   <div id="cesiumContainer"></div>
   <select class="toolbar drone_toolbar">
+    <option>Выберите дрон</option>
     <option value="allDrones">Все дроны</option>
   </select>
   <select class="toolbar zones_toolbar">
     <option value="allDrones">Все Зоны</option>
   </select>
+  <div class="button report_button">Отчет</div>
+  <div class="report">
+    <div class="report_header">
+      <h2>Отчет</h2>
+      <div id="xmarkReport" style="cursor: pointer;">X</div>
+    </div>
+    <div class="report__table_overflow">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">Дрон</th>
+            <th scope="col">Зона дрона</th>
+            <th scope="col">Маршрут следования</th>
+            <th scope="col">Координаты вылета из зоны</th>
+            <th scope="col">Координаты падения</th>
+          </tr>
+        </thead>
+        <tbody id="reportTableBody">
+          
+        </tbody>
+      </table>
+    </div>
+    
+  </div>
+  <div class="overflow"></div>
   <script src="./main.js" type="module"></script>
  </div>
 </body>
