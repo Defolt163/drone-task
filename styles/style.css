@@ -26,6 +26,7 @@ body{
 }
 
 .button{
+    border: none;
     cursor: pointer;
     position: absolute;
     top: 50px;
@@ -35,7 +36,7 @@ body{
     padding: 7px 10px;
 }
 .report_button{
-    top: 15px;
+    top: 7px;
     right: 210px;
 }
 
@@ -68,6 +69,19 @@ body{
 .report__table_overflow{
     overflow-y: scroll;
     max-height: calc(100% - 62px);
+}
+.csv_button{
+    top: auto;
+    bottom: 20px;
+}
+
+.checkbox_block{
+    color: aliceblue;
+    position: absolute;
+    bottom: 30px;
+    right: 10px;
+    background: #0f0f0f;
+    padding: 10px;
 }
 
 table {

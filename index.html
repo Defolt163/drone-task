@@ -17,6 +17,24 @@
     <option value="allDrones">Все Зоны</option>
   </select>
   <div class="button report_button">Отчет</div>
+  <div class="checkbox_block">
+    <div style="display: flex; align-items: center;">
+      <input id="zonesControlCheckbox" type="checkbox" checked/>
+      <label for="zonesControlCheckbox">Зоны контроля</label>
+    </div>
+    <div style="display: flex; margin: 5px 0; align-items: center">
+      <input id="dronesPathCheckbox" type="checkbox" checked/>
+      <label for="dronesPathCheckbox">Траектории полетов</label>
+    </div>
+    <div style="display: flex; margin-bottom: 5px; align-items: center">
+      <input id="heatmapCheckbox" type="checkbox" checked/>
+      <label for="heatmapCheckbox">Тепловая карта</label>
+    </div>
+    <div style="display: flex; align-items: center">
+      <input id="dronesEventsCheckbox" type="checkbox" checked/>
+      <label for="dronesEventsCheckbox">События</label>
+    </div>
+  </div>
   <div class="report">
     <div class="report_header">
       <h2>Отчет</h2>
@@ -28,9 +46,8 @@
           <tr>
             <th scope="col">Дрон</th>
             <th scope="col">Зона дрона</th>
-            <th scope="col">Маршрут следования</th>
-            <th scope="col">Координаты вылета из зоны</th>
-            <th scope="col">Координаты падения</th>
+            <th scope="col">Координаты события</th>
+            <th scope="col">Событие</th>
           </tr>
         </thead>
         <tbody id="reportTableBody">
@@ -38,10 +55,11 @@
         </tbody>
       </table>
     </div>
-    
+    <button class="button csv_button" id="action">Скачать отчет .csv</button>
   </div>
   <div class="overflow"></div>
-  <script src="./main.js" type="module"></script>
+  <script src="./js/turf.min.js" charset="utf-8"></script>
+  <script src="./js/main.js" type="module"></script>
  </div>
 </body>
 </html>
