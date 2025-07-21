@@ -124,6 +124,110 @@ viewer.camera.flyTo({
   }
 });
 
+/* function generateHeatmap(dronesData){
+
+  let bounds = {
+    west: 50.05,
+    east: 50.35,
+    south: 53.13,
+    north: 53.35
+  };
+  
+  // init heatmap
+  let heatMap = CesiumHeatmap.create(viewer, bounds, {
+    radius: 30,
+    maxOpacity: 0.9,
+    scaleRadius: true
+  });
+
+  const coordMap = new Map();
+
+  Object.values(dronesData).forEach(drone => {
+    drone.forEach(p => {
+      const lon = p.position[1];
+      const lat = p.position[0];
+      const key = `${lat.toFixed(5)},${lon.toFixed(5)}`;
+  
+      if (!coordMap.has(key)) {
+        coordMap.set(key, { x: lon, y: lat, value: 0 });
+      } else {
+        coordMap.get(key).value += 1;
+      }
+    });
+  });
+  
+  const heatmapData = Array.from(coordMap.values());
+  let valueMin = 0;
+  let valueMax = Math.max(...heatmapData.map(p => p.value));
+
+  heatMap.setWGS84Data(valueMin, valueMax, heatmapData);
+  
+  // 2. Камера на зону
+  viewer.camera.flyTo({
+    destination: Cesium.Rectangle.fromDegrees(bounds.west, bounds.south, bounds.east, bounds.north)
+  });
+} */
+
+function interpolatePoints(p1, p2, stepMeters = 30) {
+    const from = turf.point([p1[1], p1[0]]);
+    const to = turf.point([p2[1], p2[0]]);
+    const distance = turf.distance(from, to, { units: 'meters' });
+    const line = turf.lineString([from.geometry.coordinates, to.geometry.coordinates]);
+    const points = [];
+  
+    for (let i = 0; i < distance; i += stepMeters) {
+      const interpolated = turf.along(line, i, { units: 'meters' });
+      const [lon, lat] = interpolated.geometry.coordinates;
+      points.push([lat.toFixed(5), lon.toFixed(5)]);
+    }
+  
+    return points;
+  }
+  
+  let pointCounts = {};
+  
+  for (const droneId in dronesData) {
+    const path = dronesData[droneId];
+  
+    for (let i = 0; i < path.length - 1; i++) {
+      const p1 = path[i].position;
+      const p2 = path[i + 1].position;
+  
+      const interpolatedPoints = interpolatePoints(p1, p2);
+  
+      for (const [lat, lon] of interpolatedPoints) {
+        const key = `${lat},${lon}`;
+        pointCounts[key] = (pointCounts[key] || 0) + 1;
+      }
+    }
+  }
+  
+  // Преобразуем в формат CesiumHeatmap
+    let heatmapData = [];
+    let maxValue = 0;
+    
+    for (const key in pointCounts) {
+      const [lat, lon] = key.split(',').map(Number);
+      const value = pointCounts[key];
+      heatmapData.push({ x: lon, y: lat, value });
+      if (value > maxValue) maxValue = value;
+    }
+    
+    // Heatmap setup
+    let bounds = { west: 50.05, east: 50.35, south: 53.13, north: 53.35 };
+    
+    let heatMap = CesiumHeatmap.create(viewer, bounds, {
+      maxOpacity: 0.3
+    });
+    
+    heatMap.setWGS84Data(1, maxValue, heatmapData);
+    
+    viewer.camera.flyTo({
+      destination: Cesium.Rectangle.fromDegrees(bounds.west, bounds.south, bounds.east, bounds.north)
+    });
+  
+
+
 function configureClock(data, globalStartTime) {
   let globalStopTime = globalStartTime;
 
@@ -228,6 +332,7 @@ async function loadDronePaths(){
   .then(data => {
     dronesData = data
     console.log("DATA DRONES", dronesData)
+    generateHeatmap(dronesData)
 
     Object.keys(dronesData).forEach(key => {
       const opt = document.createElement('option');
@@ -316,7 +421,6 @@ function isPointInPolygon(point, polygon, zoneName){
     return 'inside'
   }
 }
-
 
 /* function lineInterselect(dronePath, zoneBorder){
   let droneLine = turf.lineString(dronePath);
