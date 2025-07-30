@@ -10,7 +10,6 @@
 <body>
   <div id="cesiumContainer"></div>
   <select class="toolbar drone_toolbar">
-    <option>Выберите дрон</option>
     <option value="allDrones">Все дроны</option>
   </select>
   <select class="toolbar zones_toolbar">
@@ -30,9 +29,13 @@
       <input id="heatmapCheckbox" type="checkbox" checked/>
       <label for="heatmapCheckbox">Тепловая карта</label>
     </div>
-    <div style="display: flex; align-items: center">
+    <div style="display: flex; margin-bottom: 5px; align-items: center">
       <input id="dronesEventsCheckbox" type="checkbox" checked/>
       <label for="dronesEventsCheckbox">События</label>
+    </div>
+    <div style="display: flex; align-items: center">
+      <input id="dronesPosCheckbox" type="checkbox" checked/>
+      <label for="dronesPosCheckbox">Дроны</label>
     </div>
   </div>
   <div class="report">
@@ -59,7 +62,7 @@
   </div>
   <div class="overflow"></div>
   <script src="./js/turf.min.js" charset="utf-8"></script>
-  <script src="./js/CesiumHeatmap.js" charset="utf-8"></script>
+  <script src="./js/CesiumHeatmap.js"></script>
   <script src="./js/heatmap.min.js"></script>
   <script src="./js/main.js" type="module"></script>
  </div>

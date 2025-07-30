@@ -119,3 +119,6 @@ td {
 .open{
     display: block;
 }
+.heatmap-hidden{
+    display: none !important; 
+}

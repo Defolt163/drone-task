@@ -41,6 +41,7 @@
 			var c = document.createElement("div");
 			if (id) {
 				c.setAttribute("id", id);
+				c.setAttribute("class", 333333333333333333);
 			}
 			c.setAttribute("style", "width: " + width + "px; height: " + height + "px; margin: 0px; display: none;");
 			document.body.appendChild(c);
@@ -48,6 +49,7 @@
 		};
 
 		CesiumHeatmap._getImageryProvider = function (instance) {
+			console.log("GOOOO")
 			//var n = (new Date()).getTime();
 			var d = instance._heatmap.getDataURL();
 			//console.log("Create data URL: " + ((new Date()).getTime() - n));
@@ -208,6 +210,7 @@ function CHInstance(c, bb, o) {
 	this._options.container = this._container;
 	this._heatmap = h337.create(this._options);
 	this._container.children[0].setAttribute("id", this._id + "-hm");
+	this._viewer = c;  // или viewer
 }
 
 /*  Convert a WGS84 location to the corresponding heatmap location
@@ -361,6 +364,15 @@ CHInstance.prototype.updateLayer = function () {
 
 		this._layer = this._cesium.scene.imageryLayers.addImageryProvider(CesiumHeatmap._getImageryProvider(this));
 	}
+};
+CHInstance.prototype.hide = function () {
+    if (this._layer) this._layer.show = false;
+};
+
+
+
+CHInstance.prototype.show = function () {
+    if (this._layer) this._layer.show = true;
 };
 
 /*  DON'T TOUCH:

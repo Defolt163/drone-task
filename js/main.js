@@ -9,44 +9,47 @@ reportButton.addEventListener('click', () => {
     reportBlockStatus = true
     reportBlock.classList.toggle('open')
     overflow.classList.toggle('open')
-    document.body.style.overflow = 'hidden';
+    document.body.style.overflow = 'hidden'
   }else if(reportBlockStatus){
     reportBlockStatus = false
     reportBlock.classList.remove('open')
     overflow.classList.remove('open')
-    document.body.style.overflow = '';
+    document.body.style.overflow = ''
   }
 })
 overflow.addEventListener('click', () => {
     reportBlockStatus = false
     reportBlock.classList.remove('open')
     overflow.classList.remove('open')
-    document.body.style.overflow = '';
+    document.body.style.overflow = ''
 })
 xmarkReport.addEventListener('click', () => {
     reportBlockStatus = false
     reportBlock.classList.remove('open')
     overflow.classList.remove('open')
-    document.body.style.overflow = '';
+    document.body.style.overflow = ''
 })
 
 // УПРАВЛЕНИЕ СЛОЯМИ
+  //Зоны
 const zonesControlCheckbox = document.getElementById('zonesControlCheckbox')
 zonesControlCheckbox.addEventListener('change', function () {
   if (this.checked) {
-    zonesControl(true); // функция, когда чекбокс включён
+    zonesControl(true)
   } else {
-    zonesControl(false); // функция, когда чекбокс выключен
+    zonesControl(false)
   }
 })
+  //Траектории
 const dronesPathCheckbox = document.getElementById('dronesPathCheckbox')
 dronesPathCheckbox.addEventListener('change', function () {
   if (this.checked) {
-    controlDronePath(true); // функция, когда чекбокс включён
+    controlDronePath(true)
   } else {
-    controlDronePath(false); // функция, когда чекбокс выключен
+    controlDronePath(false)
   }
 })
+  // Тепловая карта
 const heatmapCheckbox = document.getElementById('heatmapCheckbox')
 heatmapCheckbox.addEventListener('change', function () {
   if (this.checked) {
@@ -55,7 +58,7 @@ heatmapCheckbox.addEventListener('change', function () {
     controlHeatmap(false)
   }
 })
-
+  //События
 const dronesEventsCheckbox = document.getElementById('dronesEventsCheckbox')
 dronesEventsCheckbox.addEventListener('change', function () {
   if (this.checked) {
@@ -64,8 +67,17 @@ dronesEventsCheckbox.addEventListener('change', function () {
     controlWarnMarkers(false)
   }
 })
-
+  //Дроны
+const dronesPosCheckbox = document.getElementById('dronesPosCheckbox')
+dronesPosCheckbox.addEventListener('change', function () {
+  if (this.checked) {
+    controlDronePoint(true)
+  } else {
+    controlDronePoint(false)
+  }
+})
 // Функции для слоев
+  //События
 function controlWarnMarkers(status) {
   viewer.entities.values.forEach(entity => {
     if (
@@ -78,17 +90,11 @@ function controlWarnMarkers(status) {
     }
   });
 }
-
+  //Тепловая карта
 function controlHeatmap(status) {
-  Object.keys(zonesData).forEach(zone => {
-    const entity = viewer.entities.getById(zone);
-    if (entity && entity.polygon) {
-      entity.polygon.fill = !status ? false : true;
-      entity.polygon.outline = !status ? true : false;
-    }
-  });
+  !status ? heatMap.hide() : heatMap.show()
 }
-
+  // Траектории
 function controlDronePath(status){
   viewer.entities.values.forEach(entity => {
     if (entity.id.includes("-path")) {
@@ -96,7 +102,15 @@ function controlDronePath(status){
     }
   });
 }
-
+  // Дроны
+function controlDronePoint(status){
+  viewer.entities.values.forEach(entity => {
+    if (entity.id.includes("-point")) {
+      entity.show = status;
+    }
+  });
+}
+  // Зоны
 function zonesControl(status){
   Object.keys(zonesData).forEach(zone =>{
     const entity = viewer.entities.getById(zone)
@@ -117,136 +131,100 @@ const viewer = new Cesium.Viewer('cesiumContainer', {
 
 // Fly the camera to San Francisco at the given longitude, latitude, and height.
 viewer.camera.flyTo({
-  destination: Cesium.Cartesian3.fromDegrees(50.117078, 53.195070, 1400),
-  orientation: {
+  destination: Cesium.Cartesian3.fromDegrees(50.117078, 53.195070, 5400),
+  /* orientation: {
     heading: Cesium.Math.toRadians(0.0),
     pitch: Cesium.Math.toRadians(-15.0),
-  }
+  } */
 });
+  
+let heatMap = null
+function generateHeatmap(dronePaths) {
+  const bbox = [49.980134, 53.424384, 50.41006, 53.135739] // Ограничения зоны сетки [minX, maxY, maxX, minY]
+  const cellSize = 0.35 // 350м
+  const options = { units: 'kilometers' }
+  const grid = turf.squareGrid(bbox, cellSize, options) // Создание сетки
 
-/* function generateHeatmap(dronesData){
+  const heatCells = {} // Ячейки с пересечениями
 
-  let bounds = {
+  // поиск пересечений
+  for (const droneName in dronePaths) {
+    const path = dronePaths[droneName] // массив с объектами точек пути дрона [{time: 0, position: [lon,lat], altitude: 400}, {...}]
+    //разделение пути на отрезки
+    for (let i = 0; i < path.length - 1; i++) {
+      const start = path[i] // пеовая точка
+      const end = path[i + 1] // вторая точка
+
+      const droneSegment = turf.lineString([
+        [start.position[1], start.position[0]], // [lon, lat]
+        [end.position[1], end.position[0]]
+      ]);
+
+      // Проверка отрезка на пересечение ячейки сетки
+      grid.features.forEach((cell) => {
+        if (turf.booleanIntersects(cell, droneSegment)) { //Функция Boolean-intersects возвращает (TRUE), если пересечение двух геометрических фигур НЕ является пустым множеством
+          const center = turf.centroid(cell).geometry.coordinates // координаты центра ячейки
+
+          const lon = Number(center[0].toFixed(6)) // сократить координату до 6ти знаков после запятой
+          const lat = Number(center[1].toFixed(6))
+          const key = `${lon},${lat}` // создается строковый ключ на основе долготы и широты (lon, lat)
+
+          heatCells[key] = (heatCells[key] || 0) + 1 // если такая координата уже есть в heatCells, то значение увеличивается на 1. Если ещё нет, то используется 0, и создается новая запись со значением 1
+        }
+      })
+    }
+  }
+
+  // Преобразуем в массив
+  const heatArray = Object.entries(heatCells).map(([key, count]) => {
+    const [lon, lat] = key.split(',').map(Number)
+    return { x: lon, y: lat, value: count }
+  });
+  // heatArray = [{x: lon, y: lat, value: 5}, {...}]
+
+  const valueMin = 1
+  const valueMax = Math.max(...heatArray.map(p => p.value)) // Перебор массива и выявление большего значения value. Это и будет максимальное значение тепловой карты
+
+  // Границы Самары
+  const bounds = {
     west: 50.05,
     east: 50.35,
     south: 53.13,
     north: 53.35
   };
-  
-  // init heatmap
-  let heatMap = CesiumHeatmap.create(viewer, bounds, {
-    radius: 30,
+
+  // Инициализация и отрисовка тепловой карты
+  heatMap = CesiumHeatmap.create(viewer, bounds, {
+    radius: 35,
     maxOpacity: 0.9,
     scaleRadius: true
   });
+  
+  // Наложение тепловой карты
+  heatMap.setWGS84Data(valueMin, valueMax, heatArray); 
+}
 
-  const coordMap = new Map();
-
-  Object.values(dronesData).forEach(drone => {
-    drone.forEach(p => {
-      const lon = p.position[1];
-      const lat = p.position[0];
-      const key = `${lat.toFixed(5)},${lon.toFixed(5)}`;
-  
-      if (!coordMap.has(key)) {
-        coordMap.set(key, { x: lon, y: lat, value: 0 });
-      } else {
-        coordMap.get(key).value += 1;
-      }
-    });
-  });
-  
-  const heatmapData = Array.from(coordMap.values());
-  let valueMin = 0;
-  let valueMax = Math.max(...heatmapData.map(p => p.value));
-
-  heatMap.setWGS84Data(valueMin, valueMax, heatmapData);
-  
-  // 2. Камера на зону
-  viewer.camera.flyTo({
-    destination: Cesium.Rectangle.fromDegrees(bounds.west, bounds.south, bounds.east, bounds.north)
-  });
-} */
-
-function interpolatePoints(p1, p2, stepMeters = 30) {
-    const from = turf.point([p1[1], p1[0]]);
-    const to = turf.point([p2[1], p2[0]]);
-    const distance = turf.distance(from, to, { units: 'meters' });
-    const line = turf.lineString([from.geometry.coordinates, to.geometry.coordinates]);
-    const points = [];
-  
-    for (let i = 0; i < distance; i += stepMeters) {
-      const interpolated = turf.along(line, i, { units: 'meters' });
-      const [lon, lat] = interpolated.geometry.coordinates;
-      points.push([lat.toFixed(5), lon.toFixed(5)]);
-    }
-  
-    return points;
-  }
-  
-  let pointCounts = {};
-  
-  for (const droneId in dronesData) {
-    const path = dronesData[droneId];
-  
-    for (let i = 0; i < path.length - 1; i++) {
-      const p1 = path[i].position;
-      const p2 = path[i + 1].position;
-  
-      const interpolatedPoints = interpolatePoints(p1, p2);
-  
-      for (const [lat, lon] of interpolatedPoints) {
-        const key = `${lat},${lon}`;
-        pointCounts[key] = (pointCounts[key] || 0) + 1;
-      }
-    }
-  }
-  
-  // Преобразуем в формат CesiumHeatmap
-    let heatmapData = [];
-    let maxValue = 0;
-    
-    for (const key in pointCounts) {
-      const [lat, lon] = key.split(',').map(Number);
-      const value = pointCounts[key];
-      heatmapData.push({ x: lon, y: lat, value });
-      if (value > maxValue) maxValue = value;
-    }
-    
-    // Heatmap setup
-    let bounds = { west: 50.05, east: 50.35, south: 53.13, north: 53.35 };
-    
-    let heatMap = CesiumHeatmap.create(viewer, bounds, {
-      maxOpacity: 0.3
-    });
-    
-    heatMap.setWGS84Data(1, maxValue, heatmapData);
-    
-    viewer.camera.flyTo({
-      destination: Cesium.Rectangle.fromDegrees(bounds.west, bounds.south, bounds.east, bounds.north)
-    });
-  
-
-
+// настройка часов для воспроизведения движения от начала до конца в реальном времени
 function configureClock(data, globalStartTime) {
-  let globalStopTime = globalStartTime;
-
+  let globalStopTime = globalStartTime // изначально конец всей анимации равен её началу.
+  // цикл по всем трекам
   for (const key in data) {
-    const lastTime = data[key].at(-1).time;
-    const stopCandidate = Cesium.JulianDate.addSeconds(globalStartTime, lastTime, new Cesium.JulianDate());
+    const lastTime = data[key].at(-1).time
+    const stopCandidate = Cesium.JulianDate.addSeconds(globalStartTime, lastTime, new Cesium.JulianDate())
     if (Cesium.JulianDate.lessThan(globalStopTime, stopCandidate)) {
       globalStopTime = stopCandidate;
     }
   }
 
-  viewer.clock.startTime = globalStartTime.clone();
-  viewer.clock.stopTime = globalStopTime.clone();
-  viewer.clock.currentTime = globalStartTime.clone();
-  viewer.clock.clockRange = Cesium.ClockRange.LOOP_STOP;
-  viewer.clock.multiplier = 1;
-  viewer.clock.shouldAnimate = true;
+  viewer.clock.startTime = globalStartTime.clone() //устанавливает время начала
+  viewer.clock.stopTime = globalStopTime.clone() // устанавливает время конца
+  viewer.clock.currentTime = globalStartTime.clone() // устанавливает время текущего времени
+  viewer.clock.clockRange = Cesium.ClockRange.LOOP_STOP // цикл анимации
+  viewer.clock.multiplier = 1 // скорость — нормальная
+  viewer.clock.shouldAnimate = true // включить анимацию
 }
 
+// очистка отрисованных дронов
 function clearAllDrones(dronesData) {
   Object.keys(dronesData).forEach(key => {
     viewer.entities.removeById(key + '-path');
@@ -254,9 +232,9 @@ function clearAllDrones(dronesData) {
   });
 }
 
-let dronesReport = [];
-
-function drawDroneRoute(droneData, selectedDrone, globalStartTime, commandType){
+let dronesReport = []; // переменная для формирования отчета
+// отрисовка дронов
+function drawDroneRoute(droneData, selectedDrone, globalStartTime){
 
   const routePositions = droneData.map(p =>
     Cesium.Cartesian3.fromDegrees(p.position[1], p.position[0], p.altitude)
@@ -279,36 +257,35 @@ function drawDroneRoute(droneData, selectedDrone, globalStartTime, commandType){
       material: Cesium.Color.YELLOW
     }
   });
-  if(commandType !== 'checkbox'){
-    viewer.entities.add({
-      id: selectedDrone + '-point',
-      position: property,
-      //point: { pixelSize: 10, color: Cesium.Color.WHITE },
-      model: {
-        uri: "../public/CesiumDrone.glb",
-        minimumPixelSize: 64,
-        maximumScale: 20000,
-      },
-      label: {
-        text: selectedDrone,
-        font: "14px sans-serif",
-        fillColor: Cesium.Color.WHITE,
-        verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
-        pixelOffset: new Cesium.Cartesian2(0, -20)
-      },
-      orientation: new Cesium.VelocityOrientationProperty(property)
-    });
-  }
+  viewer.entities.add({
+    id: selectedDrone + '-point',
+    position: property,
+    //point: { pixelSize: 10, color: Cesium.Color.WHITE },
+    model: {
+      uri: "../public/CesiumDrone.glb",
+      minimumPixelSize: 64,
+      maximumScale: 20000,
+    },
+    label: {
+      text: selectedDrone,
+      font: "14px sans-serif",
+      fillColor: Cesium.Color.WHITE,
+      verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+      pixelOffset: new Cesium.Cartesian2(0, -20)
+    },
+    orientation: new Cesium.VelocityOrientationProperty(property)
+  });
 }
 
 const selectZoneOption = document.querySelector('.zones_toolbar'); // тулбар выбора зоны
 let zonesData = []
 let countDronesInsideZone = {}
+// получение данных о зонах
 await fetch('zones.json')
   .then(response => response.json())
   .then(data => {
     zonesData = data
-    
+    // генерация селекта в DOM
     Object.keys(zonesData).forEach(key => {
       const opt = document.createElement('option');
       opt.value = key;
@@ -317,7 +294,7 @@ await fetch('zones.json')
     });
     loadDronePaths()
 })
-  // Получение массива с дронами
+  // Получение данных с дронами
 let dronesData = []
 let droneZonePasses = {};
 
@@ -332,7 +309,6 @@ async function loadDronePaths(){
   .then(data => {
     dronesData = data
     console.log("DATA DRONES", dronesData)
-    generateHeatmap(dronesData)
 
     Object.keys(dronesData).forEach(key => {
       const opt = document.createElement('option');
@@ -341,7 +317,7 @@ async function loadDronePaths(){
       selectDroneOption.appendChild(opt);
     });
 
-    Object.keys(zonesData).forEach(zone =>{
+    /* Object.keys(zonesData).forEach(zone =>{
       Object.keys(dronesData).forEach(key => {
         console.log("DROE KEY2", dronesData[key])
         let droneTimeArray = []
@@ -368,39 +344,76 @@ async function loadDronePaths(){
             droneZonePasses[zone].push(key);
           }
         }
+        break
+        console.log('dronesData', dronePathArray)
       })
+      //generateHeatmap(dronesData)
       drawZones(zonesData[zone], zone)
-      //console.log('droneZonePasses', droneZonePasses)
+      console.log('dronesData', dronesData)
+    }) */
+   // Проверка нахождения дрона в зоне
+   // Перебор объекта с дронами, 
+   Object.keys(dronesData).forEach(droneKey => {
+    const droneEntries = dronesData[droneKey] // выбранный дрон
+
+    const droneTimeArray = droneEntries.map(i => [i.time, [i.position[0], i.position[1], i.altitude], droneKey]) // для проверки времени соединения
+    const dronePathArray = droneEntries.map(i => [i.position[0], i.position[1], i.altitude, droneKey]) // для проверки пути дрона на вылеты
+
+    let foundZone = null // найденная зона
+
+    for (let zone of Object.keys(zonesData)) {
+      if (isPointInPolygon(dronePathArray, zonesData[zone], zone) === 'inside') {
+        foundZone = zone // зона найдена
+
+        countDronesInsideZone[zone] = (countDronesInsideZone[zone] || 0) + 1 // учёт количества дронов в зоне, для определения цвета
+
+        break // дрон не может быть одновременно в нескольких зонах
+      }
+    }
+
+    if (foundZone) {
+      checkDroneZoneTime(droneTimeArray, foundZone) // проверка соединения
+    }
+    console.log('dronePathArray', dronePathArray);
+  });
+    // отрисовка каждой зоны
+    Object.keys(zonesData).forEach(zoneKey => {
+      console.log("zonesData", zonesData)
+      drawZones(zonesData[zoneKey], zoneKey)
     })
+    generateHeatmap(dronesData) // трисовка тепловой карты
 
+    // Выбор дрона
     selectDroneOption.addEventListener('change', () => {
-      selectedDrone = selectDroneOption.value;
-      const globalStartTime = Cesium.JulianDate.now();
-
-      clearAllDrones(dronesData);
+      selectedDrone = selectDroneOption.value
+      const globalStartTime = Cesium.JulianDate.now() // фиксируем текущее время как стартовое
+      clearAllDrones(dronesData) // очистка полигона
 
       if (selectedDrone === "allDrones") {
-        configureClock(data, globalStartTime);
+        configureClock(data, globalStartTime) // настраиваем часы (анимацию) для всех дронов
         for (const key in data) {
-          drawDroneRoute(data[key], key, globalStartTime);
+          drawDroneRoute(data[key], key, globalStartTime) //рисуем маршруты для каждого дрона
         }
       } else {
-        const droneData = data[selectedDrone];
-        configureClock({ [selectedDrone]: droneData }, globalStartTime);
-        drawDroneRoute(droneData, selectedDrone, globalStartTime);
+        const droneData = data[selectedDrone] // выбираем выбранный дрон
+        configureClock({ [selectedDrone]: droneData }, globalStartTime) // настройка анимации выбранного дорна
+        drawDroneRoute(droneData, selectedDrone, globalStartTime) // маршрут выбранного дрона
       }
     });
-    selectDroneOption.value = "allDrones";
-    selectDroneOption.dispatchEvent(new Event('change'));
+    selectDroneOption.value = "allDrones" // установить по умолчанию параметр
+    selectDroneOption.dispatchEvent(new Event('change')) // вызвать событие изменения параметра
   }).catch(error => {
-    console.error("Ошибка загрузки JSON:", error);
-  });
+    console.error("Ошибка загрузки JSON:", error)
+  })
 }
 
+// проверка нахождения дрона внутри зоны
 function isPointInPolygon(point, polygon, zoneName){
+  // Проверка по высоте
   for (const key of point){
-    if(key[2] > (polygon.altitude + polygon.height)){
+    if(key[2] > (polygon.altitude + polygon.height)){ // key[2] - альтитуда дрона; (polygon.altitude + polygon.height) - альтитуда верхней границы полигона
       console.log("Дрон не в зоне")
+      // запись в отчет
       dronesReport.push({
         "type": "Drone without a zone",
         "droneName": key[3],
@@ -411,13 +424,14 @@ function isPointInPolygon(point, polygon, zoneName){
     }
   }
 
-  let points = turf.points(point)
-  let searchWithin = turf.polygon([polygon.area])
-  let ptsWithin = turf.pointsWithinPolygon(points, searchWithin);
-  if (ptsWithin.features.length !== 0){
+  let points = turf.points(point) // нахождение дрона
+  let searchWithin = turf.polygon([polygon.area]) // границы зоны
+  let ptsWithin = turf.pointsWithinPolygon(points, searchWithin) // Находит точки, которые находятся внутри многоугольника.
+  // ptsWithin возвращает FeatureCollection Точка(и) или многоточка(и) с координатами, которые находятся хотя бы в пределах одного многоугольника
+  if (ptsWithin.features.length !== 0){ //Дрон находится в зоне
     console.log("ptsWithin.features", ptsWithin.features)
-    lineInterselect(point, polygon.area, zoneName)
-    checkDroneHeight(point, polygon, zoneName)
+    lineInterselect(point, polygon.area, zoneName) // Проверка на вылеты
+    checkDroneHeight(point, polygon, zoneName) // Проверка на падения
     return 'inside'
   }
 }
@@ -464,33 +478,35 @@ function isPointInPolygon(point, polygon, zoneName){
   }
 } */
 
+// проверка на вылеты
 function lineInterselect(dronePath, zoneBorder, zoneName) {
-  let zoneLine = turf.lineString(zoneBorder);
-  let addedPoints = new Set();
+  let zoneLine = turf.lineString(zoneBorder)
+  let addedPoints = new Set() // пройденные точки
 
-  // разделение пути дрона на отрезки
+  // разделение целого пути дрона на отрезки
   for (let dronePart = 0; dronePart < dronePath.length - 1; dronePart++) {
 
-    let start = dronePath[dronePart]; // первая точка
-    let end = dronePath[dronePart + 1]; // вторая точка
+    let start = dronePath[dronePart] // первая точка
+    let end = dronePath[dronePart + 1] // вторая точка
 
-    let segment = turf.lineString([[start[0], start[1]], [end[0], end[1]]]);
-    let intersects = turf.lineIntersect(segment, zoneLine);
+    let segment = turf.lineString([[start[0], start[1]], [end[0], end[1]]]) // объект отрезка. LineString создает объект на основе массива координат
+    let intersects = turf.lineIntersect(segment, zoneLine) // Проверка пересечений отрезка дрона и линий границы зоны
 
     for (let feature of intersects.features) {
-      let intersectionCoords = feature.geometry.coordinates; // [lon, lat]
+      let intersectionCoords = feature.geometry.coordinates // [lon, lat] координаты точки пересечения
+      let key = intersectionCoords.join(',') // преобразование в строку
+      if (addedPoints.has(key)) continue // Проверяем, добавляли ли уже такую точку. Если да — пропускаем (continue), чтобы не обрабатывать её второй раз
+      addedPoints.add(key) // Если точка новая, то добавляем её в множество addedPoints
 
-      let key = intersectionCoords.join(',');
-      if (addedPoints.has(key)) continue;
-      addedPoints.add(key);
-
+      // вычисление альтитуды пересеченияв пути
       const totalDist = turf.length(segment, { units: 'meters' }); // расстояние полного отрезка
       const segmentToIntersection = turf.lineString([[start[0], start[1]], intersectionCoords]);
       const partDist = turf.length(segmentToIntersection, { units: 'meters' }); // расстояние отрезка с пересечением
       const t = partDist / totalDist; // процент пройденного пути
 
-      const altitude = start[2] + t * (end[2] - start[2]); // линейная интерполяция
+      const altitude = start[2] + t * (end[2] - start[2]); // линейная интерполяция start[2] - альтитуда первой точки, end[2] - альтитуда 2й точки
 
+      // Запись в отчет
       dronesReport.push({
         "type": dronePart % 2 === 0 ? "Drone Returned the Area" : "Drone Left the Area",
         "droneName": dronePath[dronePart][3],
@@ -498,8 +514,9 @@ function lineInterselect(dronePath, zoneBorder, zoneName) {
         "zone": zoneName
       })
 
+      // Установка метки
       viewer.entities.add({
-        name: dronePart % 2 === 0 ? `Точка входа ${dronePath[dronePart][3]}` : `Точка выхода ${dronePath[dronePart][3]}`,
+        name: dronePart % 2 === 0 ? `Точка входа ${dronePath[dronePart][3]}` : `Точка выхода ${dronePath[dronePart][3]}`, // Нечет - вылет; Чет - возвращение
         position: Cesium.Cartesian3.fromDegrees(intersectionCoords[1], intersectionCoords[0], altitude),
         model: {
           uri: "../public/arrow.glb",
@@ -515,9 +532,10 @@ function lineInterselect(dronePath, zoneBorder, zoneName) {
       });
     }
   }
-  droneReport()
+  droneReport() // обновить отчет
 }
 
+// Проверка на падения
 function checkDroneHeight(dronePath, zone, zoneName) {
   const zoneAltitude = zone.altitude; // Нижняя граница зоны
   const reportedDrones = new Set();
@@ -526,26 +544,27 @@ function checkDroneHeight(dronePath, zone, zoneName) {
     const start = [dronePath[i][1], dronePath[i][0], dronePath[i][2]]; // Текущая точка
     const end = [dronePath[i + 1][1], dronePath[i + 1][0], dronePath[i + 1][2]]; // Следующая точка
 
-    const alt1 = start[2]; // Высота начальной точки
-    const alt2 = end[2];   // Высота конечной точки
-    console.log("Пересечение:", alt1, alt2, dronePath[i][3]);
+    const alt1 = start[2]; // Высота начальной точки start[2] - альтитуда [lon, lat, alt, droneName]
+    const alt2 = end[2];   // Высота конечной точки end[2] - алтитуда
 
-    // Проверяем, пересекают ли обе высоты зону, где высота < 1м от нижней границы
-    if ((alt1 - zoneAltitude < 1 && alt2 - zoneAltitude >= 1) || (alt1 - zoneAltitude >= 1 && alt2 - zoneAltitude < 1)) {
-      // Если пересечение есть, вычисляем точку t
-      const t = (zoneAltitude + 1 - alt1) / (alt2 - alt1);
+    // высота дрона от нижней границы. Альтитуда дрона - Альтитуда зоны. 90-100=-90
+    if (alt1 - zoneAltitude >= 1 && alt2 - zoneAltitude < 1) {
+      // Если пересечение есть, вычисляем долю пути
+      const t = (zoneAltitude + 1 - alt1) / (alt2 - alt1) // 1 = +1 метр к альтитуде щоны
 
       // Линейная интерполяция координат
+        // start||end = [lon, lat, alt]
       const lon = start[0] + t * (end[0] - start[0]);
       const lat = start[1] + t * (end[1] - start[1]);
 
-      console.log("Пересечение на пути дрона:", lat, lon, zoneAltitude, dronePath[i][3]);
+      console.log("Пересечение на пути отрезка дрона:", lat, lon, zoneAltitude, dronePath[i][3]);
+      // запись в отчет
       if (!reportedDrones.has(dronePath[i][3])) {
         reportedDrones.add(dronePath[i][3]);
         dronesReport.push({
           "type": "Drone Fall",
           "droneName": dronePath[i][3],
-          "coords": [lat, lon, zoneAltitude],
+          "coords": [lat, lon, zoneAltitude+1],
           "zone": zoneName
         })
       }
@@ -553,7 +572,7 @@ function checkDroneHeight(dronePath, zone, zoneName) {
       // Можно добавить метку в Cesium или визуализировать на карте:
       viewer.entities.add({
         name: `Падение дрона ${dronePath[i][3]}`,
-        position: Cesium.Cartesian3.fromDegrees(lon, lat, zoneAltitude),
+        position: Cesium.Cartesian3.fromDegrees(lon, lat, zoneAltitude+1),
         point: {
           pixelSize: 10,
           color: Cesium.Color.RED
@@ -571,20 +590,21 @@ function checkDroneHeight(dronePath, zone, zoneName) {
   droneReport()
 }
 
+// Проверка времени связи
 function checkDroneZoneTime(droneTime, zoneName) {
   console.log("checkDroneZoneTime", droneTime)
+  // droneTime = [[time0, [lon,lat,alt], droneName], [time1, [...], droneName]]
   const reportedDrones = new Set();
   for (let i = 0; i < droneTime.length - 1; i++) {
-    const p1 = droneTime[i][0]; // Текущая точка
-    const p2 = droneTime[i + 1][0]; // Следующая точка
-
-    console.log("p2", p2)
+    const p1 = droneTime[i][0]; // Текущая точка времени
+    const p2 = droneTime[i + 1][0]; // Следующая точка времени
 
     if (p2 - p1 > 10) {
       let lat = droneTime[i][1][1],
       lon = droneTime[i][1][0],
       alt = droneTime[i][1][2]
       console.log("потеря сигнала", droneTime[i][2]);
+      // запись в отчет
       if (!reportedDrones.has(droneTime[i][2])) {
         reportedDrones.add(droneTime[i][2]);
         dronesReport.push({
@@ -594,7 +614,6 @@ function checkDroneZoneTime(droneTime, zoneName) {
           "zone": zoneName
         })
       }
-      // Можно добавить метку в Cesium или визуализировать на карте:
       viewer.entities.add({
         name: `Потеря сигнала ${droneTime[i][2]}`,
         position: Cesium.Cartesian3.fromDegrees(lat, lon, alt),
@@ -633,7 +652,6 @@ function checkDroneZoneTime(droneTime, zoneName) {
     }); */
 
 //отображение зоны
-
 async function drawZones(zoneData, key){
     let coordinates = []
 
@@ -709,8 +727,7 @@ const get = async () => {
 // Add a click event listener to the button with ID 'action'
 document.getElementById('action').addEventListener('click', get);
 
-
-async function droneReport() {
+function droneReport() {
   const tbody = document.getElementById("reportTableBody");
   tbody.innerHTML = ""; // очистка
 
